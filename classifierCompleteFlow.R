@@ -5,7 +5,7 @@ library(plyr) #ddply
 #======================================================================== 
 
   #------ read features extracted from train set, using your python script
-  db=read.csv('OutputTable.csv', stringsAsFactors = F)
+  db=read.csv('features.csv', stringsAsFactors = F)
   
   #------ sort submissions
   db=db[order(db$UserID,db$ProblemID,db$SubmissionNumber),]
@@ -17,8 +17,9 @@ library(plyr) #ddply
   db= filter(db,SubmissionNumber>0)
   
   #---- remove cases when there is no video or forum activity between two submissions
-  db$NVideoAndForum= db$NVideoEvents+db$NForumEvents
-  db= filter(db,NVideoAndForum>0)  
+  # db$NVideoAndForum= db$NVideoEvents+db$NForumEvents
+  # db= filter(db,NVideoAndForum>0)  
+  db= filter(db, countOfForumEvents + countOfVideoEvents>0)
   
   #----- make a catgorical vribale, indicating if grade improved
   db$improved = factor(ifelse(db$GradeDiff>0 ,'Yes', 'No' ))
@@ -35,25 +36,38 @@ library(plyr) #ddply
   #----- train classifier to predict 'improved' status 
   #----- Try different methods, model parameters, feature sets and find the best classifier 
   #----- Use AUC as model evaluation metric
+  # model <- lm(overalGradeDiff~countOfVideoEvents+countOfForumEvents+totalTime, data=db.train)
+  # plot(model)
   library(caret)
-  paramGrid <- expand.grid(mtry = c(1,2,3))
-  fs=c('TimeSinceLast','SubmissionNumber')
-  ctrl= trainControl(method = 'cv', summaryFunction=twoClassSummary ,classProbs = TRUE)
-  model=train(x=db.train[,fs],
-               y=db.train$improved,
-               method = "rf",
-               metric="ROC",
-               trControl = ctrl,
-               tuneGrid = paramGrid,
-               preProc = c("center", "scale"))
-  print(model);   plot(model)  
+  
+  fs = c(
+    "countOfVideoEvents",
+    "countOfForumEvents",
+    "totalTime"
+  )
+  
+  model <- train(
+    y=db.train$overalGradeDiff,
+    x=db.train[,fs],
+    method = "lm"
+  )
   
 #----- check generalizability of your model on new data
-  preds= predict(model, newdata=db.test);
-  table(preds)
-  # install.packages('AUC')
-  library(AUC)
-  ROC_curve= roc(preds, db.test$improved);  auc(ROC_curve)
+  
+  test.pred = predict(model, newdata=db.test[,fs]);
+  test.y = db.test$overalGradeDiff
+  
+  SS.total      <- sum((test.y - mean(test.y))^2)
+  SS.residual   <- sum((test.y - test.pred)^2)
+  SS.regression <- sum((test.pred - mean(test.y))^2)
+  SS.total <- (SS.regression+SS.residual)
+  
+  # NOT the fraction of variability explained by the model
+  test.rsq <- 1 - SS.residual/SS.total  
+  test.rsq
+  
+  # fraction of variability explained by the model
+  SS.regression/SS.total 
 
 #======================================================================== 
 #         step 2.1: Use classifier to predict progress for test data
