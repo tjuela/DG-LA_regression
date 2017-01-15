@@ -34,14 +34,17 @@ library(caret)
     "countOfForumEvents",
     "ProblemID",
     "totalTime",
+    "totalVideoTime",
     "countOfSubmissions"
   )
   
+  #for normalized features
   fsNorm =c(
     "VideoPerSubmission",
     "ForumPerSubmission",
     "ProblemID",
     "totalTime",
+    "VideoTimePerSubmission",
     "countOfSubmissions"
   )
   

@@ -12,6 +12,7 @@ View(db)
           overalGradeDiff=Grade[length(Grade)]-Grade[1], 
           countOfSubmissions=length(SubmissionNumber),
           totalTime = sum(TimeSinceLast, na.rm = T),
+          totalVideoTime= sum(DurationOfVideoActivity,na.rm=T),
           countOfVideoEvents = sum(NVideoEvents,na.rm = T),
           countOfForumEvents = sum(NForumEvents,na.rm = T))
           # countOfVideoAndForumEvents= (sum(NVideoEvents,na.rm = T)+sum(NForumEvents,na.rm = T)))
@@ -22,6 +23,9 @@ View(db)
   agg.features$VideoPerSubmission<-(agg.features$countOfVideoEvents/agg.features$countOfSubmissions)
   agg.features["ForumPerSubmission"]<-NA
   agg.features$ForumPerSubmission<-(agg.features$countOfForumEvents/agg.features$countOfSubmissions)
+  agg.features["VideoTimePerSubmission"]<-NA
+  agg.features$VideoTimePerSubmission<-(agg.features$totalVideoTime/agg.features$countOfSubmissions)
+  
 #------ remove cases with only one attempt
   agg.features=filter(agg.features,countOfSubmissions>1); dim(agg.features)
 #------ save feature file
