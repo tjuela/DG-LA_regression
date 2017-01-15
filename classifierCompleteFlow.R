@@ -57,6 +57,27 @@ library(caret)
     method = "lm"
   )
   
+  #Control function
+  set.seed(123)
+  ctrl <- trainControl(method = "repeatedcv", repeats =3)
+  
+  #svmLinear
+  svmLin <- train(y=db.train$overalGradeDiff,
+                  x=db.train[,fs],
+                  method= "svmLinear",
+                  tuneLength=15,
+                  trControl=ctrl,
+                  metric ="RMSE",
+                  preProc= c("center", "scale"))
+  
+  #svmRadial
+  svmRad <- train(y=db.train$overalGradeDiff,
+                  x=db.train[,fs],
+                  method= "svmRadial",
+                  trControl=ctrl,
+                  metric ="RMSE",
+                  preProc= c("center", "scale"))
+  
 #----- check generalizability of your model on new data
   
   test.pred = predict(model, newdata=db.test[,fs]);
