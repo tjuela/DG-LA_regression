@@ -1,5 +1,6 @@
 library(dplyr)
 library(plyr) #ddply
+library(caret)
 #======================================================================== 
 #         step 1: train classifier
 #======================================================================== 
@@ -8,22 +9,15 @@ library(plyr) #ddply
   db=read.csv('features.csv', stringsAsFactors = F)
   
   #------ sort submissions
-  db=db[order(db$UserID,db$ProblemID,db$SubmissionNumber),]
+  db=db[order(db$UserID,db$ProblemID),]
   
   #--- replace NA values with 0
   db[is.na(db)]=0
   
-  #----- remove first submissions
-  db= filter(db,SubmissionNumber>0)
   
   #---- remove cases when there is no video or forum activity between two submissions
-  # db$NVideoAndForum= db$NVideoEvents+db$NForumEvents
-  # db= filter(db,NVideoAndForum>0)  
   db= filter(db, countOfForumEvents + countOfVideoEvents>0)
-  
-  #----- make a catgorical vribale, indicating if grade improved
-  db$improved = factor(ifelse(db$GradeDiff>0 ,'Yes', 'No' ))
-  table(db$improved)
+
   
   # ----- (Optional) split your training data into train and test set. Use train set to build your classifier and try it on test data to check generalizability. 
   set.seed(1234)
@@ -33,22 +27,33 @@ library(plyr) #ddply
   dim(db.train)
   dim(db.test)
   
-  #----- train classifier to predict 'improved' status 
-  #----- Try different methods, model parameters, feature sets and find the best classifier 
-  #----- Use AUC as model evaluation metric
-  # model <- lm(overalGradeDiff~countOfVideoEvents+countOfForumEvents+totalTime, data=db.train)
-  # plot(model)
   library(caret)
   
   fs = c(
     "countOfVideoEvents",
     "countOfForumEvents",
-    "totalTime"
+    "ProblemID",
+    "totalTime",
+    "countOfSubmissions"
+  )
+  
+  fsNorm =c(
+    "VideoPerSubmission",
+    "ForumPerSubmission",
+    "ProblemID",
+    "totalTime",
+    "countOfSubmissions"
   )
   
   model <- train(
     y=db.train$overalGradeDiff,
     x=db.train[,fs],
+    method = "lm"
+  )
+  
+  model2 <- train(
+    y=db.train$overalGradeDiff,
+    x=db.train[,fsNorm],
     method = "lm"
   )
   

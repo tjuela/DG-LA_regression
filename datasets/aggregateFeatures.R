@@ -1,7 +1,7 @@
 library(dplyr)
 library(plyr) #ddply
 #------ read data frame
-db=read.csv('OutputTable.csv')
+db=read.csv('datasets/OutputTable.csv')
 #------ sort submissions
 db=db[order(db$UserID,db$ProblemID,db$SubmissionNumber),]
 dim(db)
@@ -17,7 +17,11 @@ View(db)
           # countOfVideoAndForumEvents= (sum(NVideoEvents,na.rm = T)+sum(NForumEvents,na.rm = T)))
   
   
-  
+#-------normalize on submissions---------
+  agg.features["VideoPerSubmission"]<-NA
+  agg.features$VideoPerSubmission<-(agg.features$countOfVideoEvents/agg.features$countOfSubmissions)
+  agg.features["ForumPerSubmission"]<-NA
+  agg.features$ForumPerSubmission<-(agg.features$countOfForumEvents/agg.features$countOfSubmissions)
 #------ remove cases with only one attempt
   agg.features=filter(agg.features,countOfSubmissions>1); dim(agg.features)
 #------ save feature file
