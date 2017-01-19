@@ -81,6 +81,14 @@ library(caret)
                   metric ="RMSE",
                   preProc= c("center", "scale"))
   
+  #Gaussian Process with Radial Basis Function Kernel
+  gmr <- train(y=db.train$overalGradeDiff,
+               x=db.train[,fs],
+               method= "gaussprRadial",
+               trControl=ctrl,
+               metric="RMSE",
+               preProc= c("center", "scale"))
+  
 #----- check generalizability of your model on new data
   
   test.pred = predict(model, newdata=db.test[,fs]);
@@ -107,17 +115,17 @@ library(caret)
   testDb[is.na(testDb)]=0
   
   #---- use trained model to predict progress for test data
-  preds= predict(model, newdata=testDb);
+  preds= predict(gmr$finalModel, newdata=testDb[,fs]);
   
 #======================================================================== 
 #         step 2.1: prepare submission file for kaggle
 #======================================================================== 
   
   cl.Results=testDb[,c('ProblemID', 'UserID')]
-  cl.Results$improved=preds
+  cl.Results$overalGradeDiff=preds
   cl.Results$uniqRowID= paste0(cl.Results$UserID,'_', cl.Results$ProblemID)
-  cl.Results=cl.Results[,c('uniqRowID','improved')]
-  table(cl.Results$improved)
+  cl.Results=cl.Results[,c('uniqRowID','overalGradeDiff')]
+  table(cl.Results$overalGradeDiff)
   
   #----- keep only rows which are listed in classifier_templtae.csv file
   #----- this excludes first submissions and cases with no forum and video event in between two submissions
