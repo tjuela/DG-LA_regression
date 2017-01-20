@@ -21,7 +21,7 @@ library(caret)
   
   # ----- (Optional) split your training data into train and test set. Use train set to build your classifier and try it on test data to check generalizability. 
   set.seed(1234)
-  tr.index= sample(nrow(db), nrow(db)*0.9)
+  tr.index= sample(nrow(db), nrow(db)*0.99)
   db.train= db[tr.index,]
   db.test = db[-tr.index,]
   dim(db.train)
@@ -35,7 +35,8 @@ library(caret)
     "ProblemID",
     "totalTime",
     "totalVideoTime",
-    "countOfSubmissions"
+    "countOfSubmissions",
+    "countOfThreadViews"
   )
   
   #for normalized features
@@ -45,6 +46,7 @@ library(caret)
     "ProblemID",
     "totalTime",
     "VideoTimePerSubmission",
+    "ThreadViewPerSubmission",
     "countOfSubmissions"
   )
   
@@ -73,11 +75,15 @@ library(caret)
                   metric ="RMSE",
                   preProc= c("center", "scale"))
   
+  grid <- expand.grid(sigma = c(.980, .981, 0.982),
+                      C = c(0.21, 0.22, 0.23)
+  )
   #svmRadial
   svmRad <- train(y=db.train$overalGradeDiff,
                   x=db.train[,fs],
                   method= "svmRadial",
                   trControl=ctrl,
+                  tuneGrid = grid,
                   metric ="RMSE",
                   preProc= c("center", "scale"))
   
@@ -89,9 +95,19 @@ library(caret)
                metric="RMSE",
                preProc= c("center", "scale"))
   
+  #cubist
+  model3<- train(y=db.train$overalGradeDiff,
+               x=db.train[,fs],
+               method= "cubist",
+               trControl=ctrl,
+               tuneGrid = expand.grid(committees = c(21,22,23), neighbors = c(8,9)),
+               metric="RMSE",
+               preProc= c("center", "scale"))
+  
+  
 #----- check generalizability of your model on new data
   
-  test.pred = predict(model, newdata=db.test[,fs]);
+  test.pred = predict(model3, newdata=db.test[,fs]);
   test.y = db.test$overalGradeDiff
   
   SS.total      <- sum((test.y - mean(test.y))^2)
@@ -115,7 +131,7 @@ library(caret)
   testDb[is.na(testDb)]=0
   
   #---- use trained model to predict progress for test data
-  preds= predict(gmr$finalModel, newdata=testDb[,fs]);
+  preds= predict(model3, newdata=testDb[,fs]);
   
 #======================================================================== 
 #         step 2.1: prepare submission file for kaggle
