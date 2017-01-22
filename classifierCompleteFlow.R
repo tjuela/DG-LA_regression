@@ -43,8 +43,8 @@ library(doMC)
   
   #for normalized features
   fsNorm =c(
-    "VideoPerSubmission",
-    "ForumPerSubmission",
+    #"VideoPerSubmission",
+    #"ForumPerSubmission",
     "ProblemID",
     "totalTime",
     "NoOfVidoesWatchedPerSubmission",
@@ -55,12 +55,14 @@ library(doMC)
   
   #Control function
   set.seed(123)
-  ctrl <- trainControl(method = "repeatedcv", repeats =3)
+  ctrl <- trainControl(method = "repeatedcv", number=10, repeats =3)
   
   #lm
   model <- train(
     y=db.train$overalGradeDiff,
     x=db.train[,fs],
+    metric= "RMSE",
+    trControl = ctrl,
     method = "lm"
   )
   
