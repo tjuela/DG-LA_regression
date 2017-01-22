@@ -34,7 +34,7 @@ library(corrplot)
     "ProblemID",
     "totalTime",
     "totalVideoTime",
-    #"NoOfVidoesWatched",
+    "NoOfVidoesWatched",
     "countOfSubmissions",
     "countOfThreadViews"
   )
@@ -98,16 +98,16 @@ library(corrplot)
                preProc= c("center", "scale"))
   
   #cubist
-  model3<- train(y=db.train$overalGradeDiff,
+  cubist<- train(y=db.train$overalGradeDiff,
                  x=db.train[,fs],
                method= "cubist",
                trControl=ctrl,
-               tuneGrid = expand.grid(committees = c(21,22,23), neighbors = c(9)),
+               tuneGrid = expand.grid(committees = c(20,21,22,23,24), neighbors = c(9)),
                metric="RMSE",
                preProc= c("center", "scale"))
   
   #glmnet
-  model4<- train(y=db.train$overalGradeDiff,
+  glmnet<- train(y=db.train$overalGradeDiff,
                  x = db.train[,fsNorm],
                  method="glmnet",
                  trControl = ctrl,
@@ -143,7 +143,7 @@ library(corrplot)
   testDb[is.na(testDb)]=0
   
   #---- use trained model to predict progress for test data
-  preds= predict(model3, newdata=testDb[,fs]);
+  preds= predict(model4, newdata=testDb[,fsNorm]);
   
 #======================================================================== 
 #         step 2.1: prepare submission file for kaggle
