@@ -102,7 +102,7 @@ library(corrplot)
                  x=db.train[,fs],
                method= "cubist",
                trControl=ctrl,
-               #tuneGrid = expand.grid(committees = c(21,22,23), neighbors = c(8,9)),
+               tuneGrid = expand.grid(committees = c(21,22,23), neighbors = c(9)),
                metric="RMSE",
                preProc= c("center", "scale"))
   
@@ -143,7 +143,7 @@ library(corrplot)
   testDb[is.na(testDb)]=0
   
   #---- use trained model to predict progress for test data
-  preds= predict(model$finalModel, newdata=testDb[,fsNorm]);
+  preds= predict(model3, newdata=testDb[,fs]);
   
 #======================================================================== 
 #         step 2.1: prepare submission file for kaggle
