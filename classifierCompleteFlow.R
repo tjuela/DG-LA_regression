@@ -1,6 +1,7 @@
 library(dplyr)
 library(plyr) #ddply
 library(caret)
+library(doMC)
 #======================================================================== 
 #         step 1: train classifier
 #======================================================================== 
@@ -35,6 +36,7 @@ library(caret)
     "ProblemID",
     "totalTime",
     "totalVideoTime",
+    "NoOfVidoesWatched",
     "countOfSubmissions",
     "countOfThreadViews"
   )
@@ -45,11 +47,17 @@ library(caret)
     "ForumPerSubmission",
     "ProblemID",
     "totalTime",
+    "NoOfVidoesWatchedPerSubmission",
     "VideoTimePerSubmission",
     "ThreadViewPerSubmission",
     "countOfSubmissions"
   )
   
+  #Control function
+  set.seed(123)
+  ctrl <- trainControl(method = "repeatedcv", repeats =3)
+  
+  #lm
   model <- train(
     y=db.train$overalGradeDiff,
     x=db.train[,fs],
@@ -61,11 +69,7 @@ library(caret)
     x=db.train[,fsNorm],
     method = "lm"
   )
-  
-  #Control function
-  set.seed(123)
-  ctrl <- trainControl(method = "repeatedcv", repeats =3)
-  
+
   #svmLinear
   svmLin <- train(y=db.train$overalGradeDiff,
                   x=db.train[,fs],
@@ -104,10 +108,20 @@ library(caret)
                metric="RMSE",
                preProc= c("center", "scale"))
   
+  #glmnet
+  model4<- train(y=db.train$overalGradeDiff,
+                 x = db.train[,fsNorm],
+                 method="glmnet",
+                 trControl = ctrl,
+                 tuneGrid = expand.grid(alpha = (1:10) * 0.1, lambda = (1:10) * 0.1),
+                 metric = "RMSE",
+                 preProc = c("center", "scale"))
+  model4
+  
   
 #----- check generalizability of your model on new data
   
-  test.pred = predict(model3, newdata=db.test[,fs]);
+  test.pred = predict(model4, newdata=db.test[,fsNorm]);
   test.y = db.test$overalGradeDiff
   
   SS.total      <- sum((test.y - mean(test.y))^2)
@@ -131,7 +145,7 @@ library(caret)
   testDb[is.na(testDb)]=0
   
   #---- use trained model to predict progress for test data
-  preds= predict(model3, newdata=testDb[,fs]);
+  preds= predict(model4, newdata=testDb[,fs]);
   
 #======================================================================== 
 #         step 2.1: prepare submission file for kaggle
@@ -147,6 +161,7 @@ library(caret)
   #----- this excludes first submissions and cases with no forum and video event in between two submissions
   regression_template= read.csv('regression_template.csv', stringsAsFactors = F)
   kaggleSubmission=merge(regression_template,cl.Results )
+  kaggleSubmission$overalGradeDiff[kaggleSubmission$overalGradeDiff>100] <- 100
   write.csv(kaggleSubmission,file='regression_results.csv', row.names = F)
   
   
