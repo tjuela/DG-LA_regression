@@ -2,6 +2,7 @@ library(dplyr)
 library(plyr) #ddply
 library(caret)
 library(doMC)
+library(corrplot)
 #======================================================================== 
 #         step 1: train classifier
 #======================================================================== 
@@ -15,9 +16,6 @@ library(doMC)
   #--- replace NA values with 0
   db[is.na(db)]=0
   
-  
-  #---- remove cases when there is no video or forum activity between two submissions
-  db= filter(db, countOfForumEvents + countOfVideoEvents>0)
 
   
   # ----- (Optional) split your training data into train and test set. Use train set to build your classifier and try it on test data to check generalizability. 
@@ -32,19 +30,19 @@ library(doMC)
   
   fs = c(
     "countOfVideoEvents",
-    "countOfForumEvents",
+    #"countOfForumEvents",
     "ProblemID",
     "totalTime",
     "totalVideoTime",
-    "NoOfVidoesWatched",
+    #"NoOfVidoesWatched",
     "countOfSubmissions",
     "countOfThreadViews"
   )
   
   #for normalized features
   fsNorm =c(
-    "VideoPerSubmission",
-    "ForumPerSubmission",
+    #"VideoPerSubmission",
+    #"ForumPerSubmission",
     "ProblemID",
     "totalTime",
     "NoOfVidoesWatchedPerSubmission",
@@ -53,20 +51,20 @@ library(doMC)
     "countOfSubmissions"
   )
   
+  #check correlation
+  correlation_matrix <- cor(db.train[,fs])
+  corrplot(correlation_matrix, method = "number")
+  
   #Control function
   set.seed(123)
-  ctrl <- trainControl(method = "repeatedcv", repeats =3)
+  ctrl <- trainControl(method = "repeatedcv", repeats =3, number = 10)
   
   #lm
-  model <- train(
-    y=db.train$overalGradeDiff,
-    x=db.train[,fs],
-    method = "lm"
-  )
-  
-  model2 <- train(
+  linearModel <- train(
     y=db.train$overalGradeDiff,
     x=db.train[,fsNorm],
+    trControl = ctrl,
+    metric = "RMSE",
     method = "lm"
   )
 
@@ -101,10 +99,10 @@ library(doMC)
   
   #cubist
   model3<- train(y=db.train$overalGradeDiff,
-               x=db.train[,fs],
+                 x=db.train[,fs],
                method= "cubist",
                trControl=ctrl,
-               tuneGrid = expand.grid(committees = c(21,22,23), neighbors = c(8,9)),
+               tuneGrid = expand.grid(committees = c(21,22,23), neighbors = c(9)),
                metric="RMSE",
                preProc= c("center", "scale"))
   
@@ -145,7 +143,7 @@ library(doMC)
   testDb[is.na(testDb)]=0
   
   #---- use trained model to predict progress for test data
-  preds= predict(model4, newdata=testDb[,fs]);
+  preds= predict(model3, newdata=testDb[,fs]);
   
 #======================================================================== 
 #         step 2.1: prepare submission file for kaggle
